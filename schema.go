@@ -60,6 +60,26 @@ var toilet = graphql.NewObject(graphql.ObjectConfig{
 				return nil, nil
 			},
 		},
+		"avgRating": &graphql.Field{
+			Type: graphql.Float,
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				toilet, isOk := params.Source.(Toilet)
+				if isOk {
+					var data []*ToiletRating
+					err := db.Model(&toilet).Related(&data).Error
+					if err != nil {
+						return nil, err
+					}
+					var total, count = 0, 0
+					for _, rating := range data {
+						total += rating.Rating
+						count += 1
+					}
+					return total/count, nil
+				}
+				return nil, nil
+			},
+		}
 	},
 })
 
