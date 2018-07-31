@@ -173,7 +173,7 @@ var mutation = graphql.NewObject(graphql.ObjectConfig{
 					Rating: rating,
 					Comment: comment,
 				}
-				err := db.Save(&newRating).Error
+				err = db.Save(&newRating).Error
 				if err != nil {
 					return nil, err
 				}
