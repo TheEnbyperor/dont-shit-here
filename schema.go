@@ -75,11 +75,11 @@ var toilet = graphql.NewObject(graphql.ObjectConfig{
 						total += rating.Rating
 						count += 1
 					}
-					return total/count, nil
+					return total / count, nil
 				}
 				return nil, nil
 			},
-		}
+		},
 	},
 })
 
@@ -116,9 +116,78 @@ var query = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var mutation = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Mutation",
+	Fields: graphql.Fields{
+		"createToilet": &graphql.Field{
+			Type: toilet,
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"location": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				name, _ := p.Args["name"].(string)
+				location, _ := p.Args["location"].(string)
+
+				newToilet := &Toilet{
+					Name: name,
+					Location: location,
+				}
+				err := db.Save(&newToilet).Error
+				if err != nil {
+					return nil, err
+				}
+
+				return newToilet, nil
+			},
+		},
+		"rateToilet": &graphql.Field{
+			Type: toiletRating,
+			Args: graphql.FieldConfigArgument{
+				"uid": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.ID),
+				},
+				"rating": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.Int),
+				},
+				"comment": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				var toilet Toilet
+				err := db.First(&toilet, p.Args["uid"]).Error
+				if err != nil {
+					return nil, err
+				}
+
+				rating, _ := p.Args["rating"].(int)
+				comment, _ := p.Args["comment"].(string)
+
+				newRating := &ToiletRating{
+					Toilet: toilet,
+					Rating: rating,
+					Comment: comment,
+				}
+				err := db.Save(&newRating).Error
+				if err != nil {
+					return nil, err
+				}
+
+				return newRating, nil
+			},
+		},
+	},
+})
+
 func runServer() {
 	schema, err := graphql.NewSchema(graphql.SchemaConfig{
 		Query: query,
+		Mutation: mutation,
 	})
 
 	if err != nil {
